@@ -22,6 +22,14 @@ export class AddToCommand implements Command {
     this.sourceIndex = document.indexOf(this.shape);
   }
 
-  public execute(): void { this.document.removeShape(this.shape); this.container.addChild(this.shape); }
-  public undo(): void { this.container.removeChild(this.shape); this.document.addShape(this.shape, this.sourceParent, this.sourceIndex); }
+  public execute(): string {
+    this.document.removeShape(this.shape);
+    this.container.addChild(this.shape);
+    return `${this.shape.type}#${this.shape.id} moved into ${this.container.type}#${this.container.id}`;
+  }
+  public undo(): string {
+    this.container.removeChild(this.shape);
+    this.document.addShape(this.shape, this.sourceParent, this.sourceIndex);
+    return `${this.shape.type}#${this.shape.id} restored to original parent`;
+  }
 }

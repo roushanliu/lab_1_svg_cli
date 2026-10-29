@@ -5,6 +5,7 @@ export class Text extends Shape {
   public constructor(id: string, public x: number, public y: number, public content: string) { super(id); }
   public move(dx: number, dy: number): void { this.x += dx; this.y += dy; }
   public scale(factor: number): void { this.x *= factor; this.y *= factor; }
+  public positionSummary(): string { return `(${this.x},${this.y})`; }
   public describe(): string {
     const styles = this.styleDescription();
     return `text#${this.id} (${this.x},${this.y}) "${this.content}"${styles ? ` ${styles}` : ""}`;

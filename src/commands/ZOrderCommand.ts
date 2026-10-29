@@ -13,12 +13,12 @@ export class ZOrderCommand implements Command {
     this.originalIndex = document.indexOf(this.shape);
   }
 
-  public execute(): void {
+  public execute(): string {
     const parent = this.shape.parent;
     const siblings = parent ? parent.children : this.document.children;
     const currentIndex = siblings.indexOf(this.shape);
     const targetIndex = this.toFront ? siblings.length - 1 : 0;
-    if (currentIndex === targetIndex) return;
+    if (currentIndex === targetIndex) return `${this.shape.type}#${this.shape.id} already at ${this.toFront ? "front" : "back"}`;
     if (parent) {
       parent.removeChild(this.shape);
       parent.addChild(this.shape, targetIndex);
@@ -26,9 +26,10 @@ export class ZOrderCommand implements Command {
       this.document.removeShape(this.shape);
       this.document.addShape(this.shape, undefined, targetIndex);
     }
+    return `${this.shape.type}#${this.shape.id} moved to ${this.toFront ? "front" : "back"}`;
   }
 
-  public undo(): void {
+  public undo(): string {
     const parent = this.shape.parent;
     if (parent) {
       parent.removeChild(this.shape);
@@ -37,5 +38,6 @@ export class ZOrderCommand implements Command {
       this.document.removeShape(this.shape);
       this.document.addShape(this.shape, undefined, this.originalIndex);
     }
+    return `${this.shape.type}#${this.shape.id} z-order restored`;
   }
 }

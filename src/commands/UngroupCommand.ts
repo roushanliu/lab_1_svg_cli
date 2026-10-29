@@ -21,15 +21,17 @@ export class UngroupCommand implements Command {
     this.children = [...shape.children];
   }
 
-  public execute(): void {
+  public execute(): string {
     this.document.removeShape(this.group);
     for (const child of this.children) this.group.removeChild(child);
     this.children.forEach((child, offset) => this.document.addShape(child, this.parent, this.index + offset));
+    return `g#${this.group.id} ungrouped`;
   }
 
-  public undo(): void {
+  public undo(): string {
     for (const child of [...this.children].reverse()) this.document.removeShape(child);
     this.document.addShape(this.group, this.parent, this.index);
     for (const child of this.children) this.group.addChild(child);
+    return `g#${this.group.id} restored with ${this.children.length} children`;
   }
 }

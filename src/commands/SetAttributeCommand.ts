@@ -11,10 +11,17 @@ export class SetAttributeCommand implements Command {
     this.previousValue = this.shape.getAttribute(attribute);
   }
 
-  public execute(): void { this.shape.setAttribute(this.attribute, this.value); }
+  public execute(): string {
+    this.shape.setAttribute(this.attribute, this.value);
+    return `${this.shape.type}#${this.shape.id} updated: ${this.attribute}=${this.formatValue(this.value)}`;
+  }
 
-  public undo(): void {
+  public undo(): string {
     if (this.previousValue === undefined) this.shape.removeAttribute(this.attribute);
     else this.shape.setAttribute(this.attribute, this.previousValue);
+    const value = this.previousValue === undefined ? "<unset>" : this.formatValue(this.previousValue);
+    return `${this.shape.type}#${this.shape.id} updated: ${this.attribute}=${value}`;
   }
+
+  private formatValue(value: string): string { return this.attribute === "text" ? `"${value}"` : value; }
 }

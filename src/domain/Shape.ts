@@ -39,6 +39,8 @@ export abstract class Shape {
 
   public abstract scale(factor: number): void;
 
+  public positionSummary(): string | undefined { return undefined; }
+
   public abstract describe(): string;
 
   protected styleDescription(): string {

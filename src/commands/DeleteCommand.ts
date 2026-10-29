@@ -14,6 +14,13 @@ export class DeleteCommand implements Command {
     this.parent = this.shape.parent;
   }
 
-  public execute(): void { this.index = this.document.removeShape(this.shape); }
-  public undo(): void { this.document.addShape(this.shape, this.parent, this.index); }
+  public execute(): string {
+    this.index = this.document.removeShape(this.shape);
+    return `${this.shape.type}#${this.shape.id} deleted`;
+  }
+  public undo(): string {
+    this.document.addShape(this.shape, this.parent, this.index);
+    const parent = this.parent ? ` into ${this.parent.type}#${this.parent.id}` : "";
+    return `${this.shape.type}#${this.shape.id} restored${parent}`;
+  }
 }

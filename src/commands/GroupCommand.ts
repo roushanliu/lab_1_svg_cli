@@ -37,17 +37,19 @@ export class GroupCommand implements Command {
     this.group = new Group(groupId);
   }
 
-  public execute(): void {
+  public execute(): string {
     for (const shape of [...this.shapes].reverse()) {
       this.document.removeShape(shape);
     }
     this.document.addShape(this.group, this.targetParent, this.targetIndex);
     for (const shape of this.shapes) this.group.addChild(shape);
+    return `g#${this.group.id} created with ${this.shapes.length} children`;
   }
 
-  public undo(): void {
+  public undo(): string {
     for (const shape of [...this.shapes].reverse()) this.group.removeChild(shape);
     this.document.removeShape(this.group);
     this.shapes.forEach((shape, index) => this.document.addShape(shape, this.originalParents[index], this.originalIndexes[index]));
+    return `g#${this.group.id} deleted`;
   }
 }

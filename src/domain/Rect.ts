@@ -17,6 +17,7 @@ export class Rect extends Shape {
 
   public move(dx: number, dy: number): void { this.x += dx; this.y += dy; }
   public scale(factor: number): void { this.x *= factor; this.y *= factor; this.width *= factor; this.height *= factor; }
+  public positionSummary(): string { return `(${this.x},${this.y})`; }
   public describe(): string {
     const styles = this.styleDescription();
     return `rect#${this.id} x=${this.x} y=${this.y} w=${this.width} h=${this.height}${styles ? ` ${styles}` : ""}`;

@@ -17,12 +17,15 @@ export class CreateCommand implements Command {
     private readonly parent?: ContainerShape,
   ) {}
 
-  public execute(): void {
+  public execute(): string {
     this.createdShape ??= this.factory.create(this.type, this.id, this.parameters);
     this.document.addShape(this.createdShape, this.parent);
+    const parent = this.parent ? ` in ${this.parent.type}#${this.parent.id}` : "";
+    return `${this.createdShape.type}#${this.createdShape.id} created${parent}`;
   }
 
-  public undo(): void {
+  public undo(): string {
     if (this.createdShape) this.document.removeShape(this.createdShape);
+    return `${this.type}#${this.id} deleted`;
   }
 }

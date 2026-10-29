@@ -10,6 +10,6 @@ export class ScaleCommand implements Command {
     this.shape = document.requireShape(id);
   }
 
-  public execute(): void { this.shape.scale(this.factor); }
-  public undo(): void { this.shape.scale(1 / this.factor); }
+  public execute(): string { this.shape.scale(this.factor); return `${this.shape.type}#${this.shape.id} scaled by ${this.factor}`; }
+  public undo(): string { this.shape.scale(1 / this.factor); return `${this.shape.type}#${this.shape.id} scale restored`; }
 }

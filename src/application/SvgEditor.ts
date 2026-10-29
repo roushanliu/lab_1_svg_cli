@@ -40,8 +40,8 @@ export class SvgEditor {
     this.dispatcher.register("front", (request) => this.zOrderCommand(request, true));
     this.dispatcher.register("back", (request) => this.zOrderCommand(request, false));
     this.dispatcher.register("tree", () => () => this.document.tree());
-    this.dispatcher.register("undo", () => () => { this.history.undo(); return undefined; });
-    this.dispatcher.register("redo", () => () => { this.history.redo(); return undefined; });
+    this.dispatcher.register("undo", () => () => this.history.undo());
+    this.dispatcher.register("redo", () => () => this.history.redo());
   }
 
   public init(width = 800, height = 600): void {
@@ -57,8 +57,7 @@ export class SvgEditor {
   public dispatch(request: CommandRequest): string | undefined {
     const result = this.dispatcher.dispatch(request);
     if (typeof result === "function") return result();
-    this.history.execute(result);
-    return `${result.name} completed`;
+    return this.history.execute(result);
   }
 
   private createCommand(request: CommandRequest): Command {

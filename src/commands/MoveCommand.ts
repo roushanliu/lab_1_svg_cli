@@ -1,4 +1,5 @@
 import type { Document } from "../domain/Document.js";
+import { ContainerShape } from "../domain/ContainerShape.js";
 import type { Command } from "./Command.js";
 
 export class MoveCommand implements Command {
@@ -9,6 +10,16 @@ export class MoveCommand implements Command {
     this.shape = document.requireShape(id);
   }
 
-  public execute(): void { this.shape.move(this.dx, this.dy); }
-  public undo(): void { this.shape.move(-this.dx, -this.dy); }
+  public execute(): string {
+    this.shape.move(this.dx, this.dy);
+    return this.shape instanceof ContainerShape
+      ? `${this.shape.type}#${this.shape.id} moved by (${this.dx},${this.dy})`
+      : `${this.shape.type}#${this.shape.id} moved to ${this.shape.positionSummary()}`;
+  }
+  public undo(): string {
+    this.shape.move(-this.dx, -this.dy);
+    return this.shape instanceof ContainerShape
+      ? `${this.shape.type}#${this.shape.id} moved back by (${-this.dx},${-this.dy})`
+      : `${this.shape.type}#${this.shape.id} moved back to ${this.shape.positionSummary()}`;
+  }
 }
