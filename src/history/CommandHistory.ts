@@ -28,5 +28,9 @@ export class CommandHistory {
     this.undoStack.push(command);
   }
 
-  public lockAfterDocumentCommand(): void { this.locked = true; }
+  public lockAfterDocumentCommand(): void {
+    this.undoStack.length = 0;
+    this.redoStack.length = 0;
+    this.locked = true;
+  }
 }

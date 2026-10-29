@@ -38,4 +38,18 @@ export class Document {
     if (!shape) throw new Error(`no such shape: ${id}`);
     return shape;
   }
+
+  public tree(): string {
+    const lines = [`svg (${this.width}x${this.height})`];
+    const append = (shapes: readonly Shape[], prefix: string): void => {
+      shapes.forEach((shape, index) => {
+        const last = index === shapes.length - 1;
+        lines.push(`${prefix}${last ? "└── " : "├── "}${shape.describe()}`);
+        const container = shape as Shape & { children?: readonly Shape[] };
+        if (container.children) append(container.children, `${prefix}${last ? "    " : "│   "}`);
+      });
+    };
+    append(this.rootShapes, "");
+    return lines.join("\n");
+  }
 }

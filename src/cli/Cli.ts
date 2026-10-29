@@ -15,7 +15,10 @@ export class Cli {
     for await (const line of readline) {
       try {
         const request = this.parser.parse(line);
-        if (request) this.editor.dispatch(request);
+        if (request) {
+          const result = this.editor.dispatch(request);
+          if (result) output.write(`${result}\n`);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         output.write(`error: ${message}\n`);
