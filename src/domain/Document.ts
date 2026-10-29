@@ -8,16 +8,21 @@ export class Document {
 
   public get children(): readonly Shape[] { return this.rootShapes; }
 
-  public addShape(shape: Shape, parent?: ContainerShape): void {
+  public addShape(shape: Shape, parent?: ContainerShape, index?: number): void {
     if (this.find(shape.id)) throw new Error(`id already exists: ${shape.id}`);
-    if (parent) parent.addChild(shape); else { shape.setParent(undefined); this.rootShapes.push(shape); }
+    if (parent) parent.addChild(shape, index); else {
+      shape.setParent(undefined);
+      if (index === undefined) this.rootShapes.push(shape); else this.rootShapes.splice(index, 0, shape);
+    }
   }
 
-  public removeShape(shape: Shape): void {
-    if (shape.parent) { shape.parent.removeChild(shape); return; }
+  public removeShape(shape: Shape): number {
+    if (shape.parent) return shape.parent.removeChild(shape);
     const index = this.rootShapes.indexOf(shape);
     if (index < 0) throw new Error(`no such shape: ${shape.id}`);
     this.rootShapes.splice(index, 1);
+    shape.setParent(undefined);
+    return index;
   }
 
   public find(id: string): Shape | undefined {

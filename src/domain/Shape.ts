@@ -20,6 +20,10 @@ export abstract class Shape {
     this.attributes.set(name, value);
   }
 
+  public removeAttribute(name: string): void {
+    this.attributes.delete(name);
+  }
+
   public getAttribute(name: string): string | undefined {
     return this.attributes.get(name);
   }
