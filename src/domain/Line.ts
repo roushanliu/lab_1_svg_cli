@@ -8,7 +8,10 @@ export class Line extends Shape {
   }
   public move(dx: number, dy: number): void { this.x1 += dx; this.y1 += dy; this.x2 += dx; this.y2 += dy; }
   public scale(factor: number): void { this.x1 *= factor; this.y1 *= factor; this.x2 *= factor; this.y2 *= factor; }
-  public describe(): string { return `line#${this.id} (${this.x1},${this.y1}) -> (${this.x2},${this.y2})`; }
+  public describe(): string {
+    const styles = this.styleDescription();
+    return `line#${this.id} (${this.x1},${this.y1}) -> (${this.x2},${this.y2})${styles ? ` ${styles}` : ""}`;
+  }
 
   public getAttribute(name: string): string | undefined {
     if (name === "x1") return String(this.x1);

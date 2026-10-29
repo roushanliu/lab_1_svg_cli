@@ -37,4 +37,14 @@ export abstract class Shape {
   public abstract scale(factor: number): void;
 
   public abstract describe(): string;
+
+  protected styleDescription(): string {
+    return ["fill", "stroke", "stroke-width"]
+      .map((name) => {
+        const value = this.getAttribute(name);
+        return value === undefined ? "" : `${name}=${value}`;
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
 }

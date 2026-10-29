@@ -45,6 +45,7 @@ export abstract class ContainerShape extends Shape {
   }
 
   public describe(): string {
-    return `${this.type}#${this.id}`;
+    const styles = this.styleDescription();
+    return `${this.type}#${this.id}${styles ? ` ${styles}` : ""}`;
   }
 }

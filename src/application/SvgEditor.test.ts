@@ -61,9 +61,11 @@ describe("SvgEditor first command loop", () => {
     editor.dispatch({ name: "create", arguments: ["g", "scene"] });
     editor.dispatch({ name: "create", arguments: ["rect", "r1", "10", "20", "30", "40", "red", "in", "scene"] });
     editor.dispatch({ name: "create", arguments: ["circle", "c1", "100", "100", "10", "blue", "in", "scene"] });
-    editor.dispatch({ name: "group", arguments: ["node", "r1", "c1"] });
+    editor.dispatch({ name: "group", arguments: ["node", "c1", "r1"] });
 
-    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("g#node");
+    const groupedTree = editor.dispatch({ name: "tree", arguments: [] }) ?? "";
+    expect(groupedTree).toContain("g#node");
+    expect(groupedTree.indexOf("rect#r1")).toBeLessThan(groupedTree.indexOf("circle#c1"));
     editor.dispatch({ name: "move", arguments: ["node", "5", "6"] });
     expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("x=15 y=26");
     editor.dispatch({ name: "undo", arguments: [] });

@@ -8,7 +8,10 @@ export class Circle extends Shape {
   }
   public move(dx: number, dy: number): void { this.cx += dx; this.cy += dy; }
   public scale(factor: number): void { this.cx *= factor; this.cy *= factor; this.r *= factor; }
-  public describe(): string { return `circle#${this.id} cx=${this.cx} cy=${this.cy} r=${this.r}`; }
+  public describe(): string {
+    const styles = this.styleDescription();
+    return `circle#${this.id} cx=${this.cx} cy=${this.cy} r=${this.r}${styles ? ` ${styles}` : ""}`;
+  }
 
   public getAttribute(name: string): string | undefined {
     if (name === "cx") return String(this.cx);

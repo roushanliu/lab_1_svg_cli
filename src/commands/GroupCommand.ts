@@ -16,22 +16,29 @@ export class GroupCommand implements Command {
   public constructor(private readonly document: Document, groupId: string, ids: readonly string[]) {
     if (ids.length === 0) throw new Error("group requires at least one shape");
     if (document.find(groupId)) throw new Error(`id already exists: ${groupId}`);
-    this.shapes = ids.map((id) => document.requireShape(id));
-    if (new Set(this.shapes).size !== this.shapes.length) throw new Error("group contains duplicate shapes");
-    for (const container of this.shapes) {
-      if (container instanceof ContainerShape && this.shapes.some((shape) => shape !== container && container.contains(shape))) {
+    const selectedShapes = ids.map((id) => document.requireShape(id));
+    if (new Set(selectedShapes).size !== selectedShapes.length) throw new Error("group contains duplicate shapes");
+    for (const container of selectedShapes) {
+      if (container instanceof ContainerShape && selectedShapes.some((shape) => shape !== container && container.contains(shape))) {
         throw new Error(`cannot group a container into its own descendant: ${container.id}`);
       }
     }
+    const selectedParents = selectedShapes.map((shape) => shape.parent);
+    const selectedIndexes = selectedShapes.map((shape) => document.indexOf(shape));
+    const order = selectedShapes.map((_, index) => index).sort((a, b) => {
+      if (selectedParents[a] !== selectedParents[b]) return a - b;
+      return selectedIndexes[a] - selectedIndexes[b];
+    });
+    this.shapes = order.map((index) => selectedShapes[index]);
     this.targetParent = this.shapes[0].parent;
-    this.originalParents = this.shapes.map((shape) => shape.parent);
-    this.originalIndexes = this.shapes.map((shape) => document.indexOf(shape));
+    this.originalParents = order.map((index) => selectedParents[index]);
+    this.originalIndexes = order.map((index) => selectedIndexes[index]);
     this.targetIndex = Math.min(...this.originalIndexes.filter((_, index) => this.originalParents[index] === this.targetParent));
     this.group = new Group(groupId);
   }
 
   public execute(): void {
-    for (const shape of [...this.shapes].sort((a, b) => this.document.indexOf(b) - this.document.indexOf(a))) {
+    for (const shape of [...this.shapes].reverse()) {
       this.document.removeShape(shape);
     }
     this.document.addShape(this.group, this.targetParent, this.targetIndex);

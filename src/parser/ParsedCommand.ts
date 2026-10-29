@@ -1,3 +1,4 @@
-import type { CommandRequest } from "../commands/CommandRequest.js";
-
-export type ParsedCommand = CommandRequest;
+export interface ParsedCommand {
+  readonly name: string;
+  readonly arguments: readonly string[];
+}

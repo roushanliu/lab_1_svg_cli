@@ -1,6 +1,5 @@
 import { CommandDispatcher } from "../commands/CommandDispatcher.js";
 import type { CommandRequest } from "../commands/CommandRequest.js";
-import { CreateCommand } from "../commands/CreateCommand.js";
 import { DeleteCommand } from "../commands/DeleteCommand.js";
 import { AddToCommand } from "../commands/AddToCommand.js";
 import { GroupCommand } from "../commands/GroupCommand.js";
@@ -12,14 +11,12 @@ import { ZOrderCommand } from "../commands/ZOrderCommand.js";
 import type { Command } from "../commands/Command.js";
 import { Document } from "../domain/Document.js";
 import { ContainerShape } from "../domain/ContainerShape.js";
-import { ShapeFactory } from "../factory/ShapeFactory.js";
 import { CommandHistory } from "../history/CommandHistory.js";
 import { SvgReader } from "../io/SvgReader.js";
 import { SvgWriter } from "../io/SvgWriter.js";
 
 export class SvgEditor {
   private currentDocument?: Document;
-  public readonly factory = new ShapeFactory();
   public readonly history = new CommandHistory();
   public readonly dispatcher = new CommandDispatcher();
   public readonly reader = new SvgReader();
@@ -78,7 +75,7 @@ export class SvgEditor {
       parent = candidate;
       shapeParameters = parameters.slice(0, inIndex);
     }
-    return new CreateCommand(this.currentDocument, this.factory, type, id, shapeParameters, parent);
+    return this.dispatcher.createShapeCommand(this.currentDocument, type, id, shapeParameters, parent);
   }
 
   private moveCommand(request: CommandRequest): Command {
