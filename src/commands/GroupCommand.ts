@@ -25,9 +25,9 @@ export class GroupCommand implements Command {
     }
     const selectedParents = selectedShapes.map((shape) => shape.parent);
     const selectedIndexes = selectedShapes.map((shape) => document.indexOf(shape));
+    const selectedDocumentOrders = selectedShapes.map((shape) => document.documentOrder(shape));
     const order = selectedShapes.map((_, index) => index).sort((a, b) => {
-      if (selectedParents[a] !== selectedParents[b]) return a - b;
-      return selectedIndexes[a] - selectedIndexes[b];
+      return selectedDocumentOrders[a] - selectedDocumentOrders[b];
     });
     this.shapes = order.map((index) => selectedShapes[index]);
     this.targetParent = this.shapes[0].parent;

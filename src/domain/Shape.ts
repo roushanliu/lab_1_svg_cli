@@ -17,6 +17,9 @@ export abstract class Shape {
   }
 
   public setAttribute(name: string, value: string): void {
+    if (!["fill", "stroke", "stroke-width"].includes(name)) {
+      throw new Error(`unknown attribute: ${name}`);
+    }
     this.attributes.set(name, value);
   }
 

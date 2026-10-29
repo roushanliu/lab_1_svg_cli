@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SvgEditor } from "./SvgEditor.js";
+import { CommandParser } from "../parser/CommandParser.js";
 
 describe("SvgEditor first command loop", () => {
   it("creates a rectangle, shows it in the tree, and undoes it", () => {
@@ -87,5 +88,18 @@ describe("SvgEditor first command loop", () => {
     const tree = editor.dispatch({ name: "tree", arguments: [] }) ?? "";
     expect(tree.indexOf("rect#r1")).toBeGreaterThan(tree.indexOf("svg (800x600)"));
     expect(tree).not.toContain("    └── rect#r1");
+  });
+
+  it("treats a color beginning with # as a value, while a line-leading # is a comment", () => {
+    const parser = new CommandParser();
+    expect(parser.parse("# comment")).toBeUndefined();
+    expect(parser.parse("create rect r1 0 0 10 10 #4a90d9")?.arguments.at(-1)).toBe("#4a90d9");
+  });
+
+  it("reports a missing create parent as a missing container", () => {
+    const editor = new SvgEditor();
+    editor.dispatch({ name: "init", arguments: [] });
+    expect(() => editor.dispatch({ name: "create", arguments: ["rect", "r1", "0", "0", "10", "10", "in", "node9"] }))
+      .toThrow("no such container: node9");
   });
 });

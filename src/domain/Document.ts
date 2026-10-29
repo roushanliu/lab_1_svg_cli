@@ -51,6 +51,23 @@ export class Document {
     return index;
   }
 
+  public documentOrder(shape: Shape): number {
+    let order = 0;
+    let result = -1;
+    const visit = (shapes: readonly Shape[]): void => {
+      for (const current of shapes) {
+        if (current === shape) { result = order; return; }
+        order += 1;
+        const container = current as Shape & { children?: readonly Shape[] };
+        if (container.children) visit(container.children);
+        if (result >= 0) return;
+      }
+    };
+    visit(this.rootShapes);
+    if (result < 0) throw new Error(`no such shape: ${shape.id}`);
+    return result;
+  }
+
   public tree(): string {
     const lines = [`svg (${this.width}x${this.height})`];
     const append = (shapes: readonly Shape[], prefix: string): void => {

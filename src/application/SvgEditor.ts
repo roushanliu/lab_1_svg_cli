@@ -70,7 +70,8 @@ export class SvgEditor {
     let parent: ContainerShape | undefined;
     if (inIndex >= 0) {
       if (inIndex !== parameters.length - 2) throw new Error("in requires a container id at the end of create");
-      const candidate = this.currentDocument.requireShape(parameters[inIndex + 1]);
+      const candidate = this.currentDocument.find(parameters[inIndex + 1]);
+      if (!candidate) throw new Error(`no such container: ${parameters[inIndex + 1]}`);
       if (!(candidate instanceof ContainerShape)) throw new Error(`not a container: ${candidate.id}`);
       parent = candidate;
       shapeParameters = parameters.slice(0, inIndex);
