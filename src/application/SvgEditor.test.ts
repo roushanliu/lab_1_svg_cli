@@ -54,4 +54,36 @@ describe("SvgEditor first command loop", () => {
     expect(() => editor.dispatch({ name: "scale", arguments: ["r1", "0"] })).toThrow("scale factor must be positive");
     expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("w=10 h=10");
   });
+
+  it("groups children, moves the composite, and undoes the group as one unit", () => {
+    const editor = new SvgEditor();
+    editor.dispatch({ name: "init", arguments: [] });
+    editor.dispatch({ name: "create", arguments: ["g", "scene"] });
+    editor.dispatch({ name: "create", arguments: ["rect", "r1", "10", "20", "30", "40", "red", "in", "scene"] });
+    editor.dispatch({ name: "create", arguments: ["circle", "c1", "100", "100", "10", "blue", "in", "scene"] });
+    editor.dispatch({ name: "group", arguments: ["node", "r1", "c1"] });
+
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("g#node");
+    editor.dispatch({ name: "move", arguments: ["node", "5", "6"] });
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("x=15 y=26");
+    editor.dispatch({ name: "undo", arguments: [] });
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("x=10 y=20");
+
+    editor.dispatch({ name: "ungroup", arguments: ["node"] });
+    expect(editor.dispatch({ name: "tree", arguments: [] })).not.toContain("g#node");
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("rect#r1");
+  });
+
+  it("moves an existing shape into a container and restores its parent on undo", () => {
+    const editor = new SvgEditor();
+    editor.dispatch({ name: "init", arguments: [] });
+    editor.dispatch({ name: "create", arguments: ["g", "scene"] });
+    editor.dispatch({ name: "create", arguments: ["rect", "r1", "0", "0", "10", "10"] });
+    editor.dispatch({ name: "addto", arguments: ["scene", "r1"] });
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("g#scene");
+    editor.dispatch({ name: "undo", arguments: [] });
+    const tree = editor.dispatch({ name: "tree", arguments: [] }) ?? "";
+    expect(tree.indexOf("rect#r1")).toBeGreaterThan(tree.indexOf("svg (800x600)"));
+    expect(tree).not.toContain("    └── rect#r1");
+  });
 });

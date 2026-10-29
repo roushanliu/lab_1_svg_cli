@@ -1,0 +1,46 @@
+import { ContainerShape } from "../domain/ContainerShape.js";
+import { Document } from "../domain/Document.js";
+import { Group } from "../domain/Group.js";
+import type { Shape } from "../domain/Shape.js";
+import type { Command } from "./Command.js";
+
+export class GroupCommand implements Command {
+  public readonly name = "group";
+  private readonly shapes: Shape[];
+  private readonly targetParent: ContainerShape | undefined;
+  private readonly targetIndex: number;
+  private readonly originalParents: Array<ContainerShape | undefined>;
+  private readonly originalIndexes: number[];
+  private readonly group: Group;
+
+  public constructor(private readonly document: Document, groupId: string, ids: readonly string[]) {
+    if (ids.length === 0) throw new Error("group requires at least one shape");
+    if (document.find(groupId)) throw new Error(`id already exists: ${groupId}`);
+    this.shapes = ids.map((id) => document.requireShape(id));
+    if (new Set(this.shapes).size !== this.shapes.length) throw new Error("group contains duplicate shapes");
+    for (const container of this.shapes) {
+      if (container instanceof ContainerShape && this.shapes.some((shape) => shape !== container && container.contains(shape))) {
+        throw new Error(`cannot group a container into its own descendant: ${container.id}`);
+      }
+    }
+    this.targetParent = this.shapes[0].parent;
+    this.originalParents = this.shapes.map((shape) => shape.parent);
+    this.originalIndexes = this.shapes.map((shape) => document.indexOf(shape));
+    this.targetIndex = Math.min(...this.originalIndexes.filter((_, index) => this.originalParents[index] === this.targetParent));
+    this.group = new Group(groupId);
+  }
+
+  public execute(): void {
+    for (const shape of [...this.shapes].sort((a, b) => this.document.indexOf(b) - this.document.indexOf(a))) {
+      this.document.removeShape(shape);
+    }
+    this.document.addShape(this.group, this.targetParent, this.targetIndex);
+    for (const shape of this.shapes) this.group.addChild(shape);
+  }
+
+  public undo(): void {
+    for (const shape of [...this.shapes].reverse()) this.group.removeChild(shape);
+    this.document.removeShape(this.group);
+    this.shapes.forEach((shape, index) => this.document.addShape(shape, this.originalParents[index], this.originalIndexes[index]));
+  }
+}

@@ -2,11 +2,16 @@ import { CommandDispatcher } from "../commands/CommandDispatcher.js";
 import type { CommandRequest } from "../commands/CommandRequest.js";
 import { CreateCommand } from "../commands/CreateCommand.js";
 import { DeleteCommand } from "../commands/DeleteCommand.js";
+import { AddToCommand } from "../commands/AddToCommand.js";
+import { GroupCommand } from "../commands/GroupCommand.js";
 import { MoveCommand } from "../commands/MoveCommand.js";
 import { ScaleCommand } from "../commands/ScaleCommand.js";
 import { SetAttributeCommand } from "../commands/SetAttributeCommand.js";
+import { UngroupCommand } from "../commands/UngroupCommand.js";
+import { ZOrderCommand } from "../commands/ZOrderCommand.js";
 import type { Command } from "../commands/Command.js";
 import { Document } from "../domain/Document.js";
+import { ContainerShape } from "../domain/ContainerShape.js";
 import { ShapeFactory } from "../factory/ShapeFactory.js";
 import { CommandHistory } from "../history/CommandHistory.js";
 import { SvgReader } from "../io/SvgReader.js";
@@ -32,6 +37,11 @@ export class SvgEditor {
     this.dispatcher.register("scale", (request) => this.scaleCommand(request));
     this.dispatcher.register("set", (request) => this.setAttributeCommand(request));
     this.dispatcher.register("delete", (request) => this.deleteCommand(request));
+    this.dispatcher.register("group", (request) => this.groupCommand(request));
+    this.dispatcher.register("ungroup", (request) => this.ungroupCommand(request));
+    this.dispatcher.register("addto", (request) => this.addToCommand(request));
+    this.dispatcher.register("front", (request) => this.zOrderCommand(request, true));
+    this.dispatcher.register("back", (request) => this.zOrderCommand(request, false));
     this.dispatcher.register("tree", () => () => this.document.tree());
     this.dispatcher.register("undo", () => () => { this.history.undo(); return undefined; });
     this.dispatcher.register("redo", () => () => { this.history.redo(); return undefined; });
@@ -58,7 +68,17 @@ export class SvgEditor {
     if (!this.currentDocument) throw new Error("no document. use 'init' or 'read' first");
     const [type, id, ...parameters] = request.arguments;
     if (!type || !id) throw new Error("create requires a type and id");
-    return new CreateCommand(this.currentDocument, this.factory, type, id, parameters);
+    const inIndex = parameters.indexOf("in");
+    let shapeParameters = parameters;
+    let parent: ContainerShape | undefined;
+    if (inIndex >= 0) {
+      if (inIndex !== parameters.length - 2) throw new Error("in requires a container id at the end of create");
+      const candidate = this.currentDocument.requireShape(parameters[inIndex + 1]);
+      if (!(candidate instanceof ContainerShape)) throw new Error(`not a container: ${candidate.id}`);
+      parent = candidate;
+      shapeParameters = parameters.slice(0, inIndex);
+    }
+    return new CreateCommand(this.currentDocument, this.factory, type, id, shapeParameters, parent);
   }
 
   private moveCommand(request: CommandRequest): Command {
@@ -83,6 +103,30 @@ export class SvgEditor {
     const [id] = request.arguments;
     if (!id) throw new Error("delete requires id");
     return new DeleteCommand(this.document, id);
+  }
+
+  private groupCommand(request: CommandRequest): Command {
+    const [groupId, ...ids] = request.arguments;
+    if (!groupId) throw new Error("group requires a new id and at least one shape");
+    return new GroupCommand(this.document, groupId, ids);
+  }
+
+  private ungroupCommand(request: CommandRequest): Command {
+    const [id] = request.arguments;
+    if (!id) throw new Error("ungroup requires id");
+    return new UngroupCommand(this.document, id);
+  }
+
+  private addToCommand(request: CommandRequest): Command {
+    const [containerId, shapeId] = request.arguments;
+    if (!containerId || !shapeId) throw new Error("addto requires container id and shape id");
+    return new AddToCommand(this.document, containerId, shapeId);
+  }
+
+  private zOrderCommand(request: CommandRequest, toFront: boolean): Command {
+    const [id] = request.arguments;
+    if (!id) throw new Error(`${toFront ? "front" : "back"} requires id`);
+    return new ZOrderCommand(this.document, id, toFront);
   }
 
   private number(value: string, name: string): number {

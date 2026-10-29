@@ -44,6 +44,13 @@ export class Document {
     return shape;
   }
 
+  public indexOf(shape: Shape): number {
+    const siblings = shape.parent ? shape.parent.children : this.rootShapes;
+    const index = siblings.indexOf(shape);
+    if (index < 0) throw new Error(`no such shape: ${shape.id}`);
+    return index;
+  }
+
   public tree(): string {
     const lines = [`svg (${this.width}x${this.height})`];
     const append = (shapes: readonly Shape[], prefix: string): void => {
