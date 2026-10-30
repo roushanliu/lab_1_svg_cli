@@ -51,6 +51,22 @@ export class Document {
     return index;
   }
 
+  public resize(width: number, height: number): void {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      throw new Error("canvas dimensions must be positive");
+    }
+    this.width = width;
+    this.height = height;
+  }
+
+  public show(id: string): string {
+    const shape = this.requireShape(id);
+    const parent = shape.parent ? `${shape.parent.type}#${shape.parent.id}` : "svg";
+    const lines = [`${shape.describe()} parent=${parent}`];
+    for (const [name, value] of shape.attributesSnapshot) lines.push(`  ${name}=${value}`);
+    return lines.join("\n");
+  }
+
   public documentOrder(shape: Shape): number {
     let order = 0;
     let result = -1;
@@ -68,7 +84,23 @@ export class Document {
     return result;
   }
 
-  public tree(): string {
+  public tree(id?: string): string {
+    if (id) {
+      const shape = this.requireShape(id);
+      const lines = [shape.describe()];
+      const container = shape as Shape & { children?: readonly Shape[] };
+      const append = (shapes: readonly Shape[], prefix: string): void => {
+        shapes.forEach((child, index) => {
+          const last = index === shapes.length - 1;
+          lines.push(`${prefix}${last ? "└── " : "├── "}${child.describe()}`);
+          const childContainer = child as Shape & { children?: readonly Shape[] };
+          if (childContainer.children) append(childContainer.children, `${prefix}${last ? "    " : "│   "}`);
+        });
+      };
+      if (container.children) append(container.children, "");
+      return lines.join("\n");
+    }
+
     const lines = [`svg (${this.width}x${this.height})`];
     const append = (shapes: readonly Shape[], prefix: string): void => {
       shapes.forEach((shape, index) => {
@@ -80,5 +112,10 @@ export class Document {
     };
     append(this.rootShapes, "");
     return lines.join("\n");
+  }
+
+  public toSvg(): string {
+    const children = this.rootShapes.map((shape) => shape.toSvg(2)).join("\n");
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${this.width}" height="${this.height}" viewBox="0 0 ${this.width} ${this.height}">${children ? `\n${children}\n` : ""}</svg>\n`;
   }
 }

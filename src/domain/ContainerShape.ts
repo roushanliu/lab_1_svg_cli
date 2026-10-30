@@ -48,4 +48,10 @@ export abstract class ContainerShape extends Shape {
     const styles = this.styleDescription();
     return `${this.type}#${this.id}${styles ? ` ${styles}` : ""}`;
   }
+
+  public toSvg(indent = 0): string {
+    const spaces = " ".repeat(indent);
+    const children = this.childShapes.map((child) => child.toSvg(indent + 2)).join("\n");
+    return `${spaces}<g id="${Shape.escapeXml(this.id)}"${this.svgStyleAttributes()}>${children ? `\n${children}\n${spaces}` : ""}</g>`;
+  }
 }

@@ -17,6 +17,7 @@ import { SvgWriter } from "../io/SvgWriter.js";
 
 export class SvgEditor {
   private currentDocument?: Document;
+  private currentPath?: string;
   public readonly history = new CommandHistory();
   public readonly dispatcher = new CommandDispatcher();
   public readonly reader = new SvgReader();
@@ -29,6 +30,33 @@ export class SvgEditor {
       this.init(width, height);
       return `canvas ${width}x${height} created`;
     });
+    this.dispatcher.register("canvas", (request) => () => {
+      if (request.arguments.length === 0) return `${this.document.width}x${this.document.height}`;
+      if (request.arguments.length !== 2) throw new Error("canvas requires width and height");
+      this.document.resize(this.number(request.arguments[0], "width"), this.number(request.arguments[1], "height"));
+      this.history.lockAfterDocumentCommand();
+      return `canvas ${this.document.width}x${this.document.height} updated`;
+    });
+    this.dispatcher.register("show", (request) => () => {
+      const [id] = request.arguments;
+      if (!id) throw new Error("show requires id");
+      return this.document.show(id);
+    });
+    this.dispatcher.register("help", () => () => [
+      "init [w] [h]", "read <file.svg>", "save [file.svg]", "canvas [w] [h]",
+      "create <type> <id> [params...] [in <containerId>]", "delete <id>",
+      "move <id> <dx> <dy>", "scale <id> <factor>", "set <id> <attr> <value>",
+      "group <newGid> <id1> <id2>...", "ungroup <gid>", "addto <gid> <id>",
+      "front <id>", "back <id>", "tree [id]", "show <id>", "help", "undo", "redo",
+    ].join("\n"));
+    this.dispatcher.register("save", (request) => () => {
+      const path = request.arguments[0] ?? this.currentPath;
+      if (!path) throw new Error("save requires a file path");
+      this.writer.write(path, this.document);
+      this.currentPath = path;
+      this.history.lockAfterDocumentCommand();
+      return `saved to ${path}`;
+    });
     this.dispatcher.register("create", (request) => this.createCommand(request));
     this.dispatcher.register("move", (request) => this.moveCommand(request));
     this.dispatcher.register("scale", (request) => this.scaleCommand(request));
@@ -39,13 +67,14 @@ export class SvgEditor {
     this.dispatcher.register("addto", (request) => this.addToCommand(request));
     this.dispatcher.register("front", (request) => this.zOrderCommand(request, true));
     this.dispatcher.register("back", (request) => this.zOrderCommand(request, false));
-    this.dispatcher.register("tree", () => () => this.document.tree());
+    this.dispatcher.register("tree", (request) => () => this.document.tree(request.arguments[0]));
     this.dispatcher.register("undo", () => () => this.history.undo());
     this.dispatcher.register("redo", () => () => this.history.redo());
   }
 
   public init(width = 800, height = 600): void {
     this.currentDocument = new Document(width, height);
+    this.currentPath = undefined;
     this.history.lockAfterDocumentCommand();
   }
 

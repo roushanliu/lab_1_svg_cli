@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { SvgEditor } from "./SvgEditor.js";
 import { CommandParser } from "../parser/CommandParser.js";
 
@@ -9,6 +12,7 @@ describe("SvgEditor first command loop", () => {
     expect(editor.dispatch({ name: "init", arguments: ["400", "200"] })).toBe("canvas 400x200 created");
     expect(editor.dispatch({ name: "create", arguments: ["rect", "r1", "10", "20", "100", "50", "red"] })).toBe("rect#r1 created");
     expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("rect#r1 x=10 y=20 w=100 h=50");
+    expect(editor.dispatch({ name: "tree", arguments: ["r1"] })).toBe("rect#r1 x=10 y=20 w=100 h=50 fill=red");
 
     editor.dispatch({ name: "undo", arguments: [] });
     expect(editor.dispatch({ name: "tree", arguments: [] })).toBe("svg (400x200)");
@@ -101,5 +105,23 @@ describe("SvgEditor first command loop", () => {
     editor.dispatch({ name: "init", arguments: [] });
     expect(() => editor.dispatch({ name: "create", arguments: ["rect", "r1", "0", "0", "10", "10", "in", "node9"] }))
       .toThrow("no such container: node9");
+  });
+
+  it("shows details, resizes the canvas, prints help, and saves SVG", () => {
+    const editor = new SvgEditor();
+    editor.dispatch({ name: "init", arguments: ["320", "180"] });
+    editor.dispatch({ name: "create", arguments: ["rect", "r1", "10", "20", "100", "50", "red"] });
+
+    expect(editor.dispatch({ name: "show", arguments: ["r1"] })).toContain("parent=svg");
+    expect(editor.dispatch({ name: "canvas", arguments: [] })).toBe("320x180");
+    expect(editor.dispatch({ name: "canvas", arguments: ["640", "360"] })).toBe("canvas 640x360 updated");
+    expect(editor.dispatch({ name: "help", arguments: [] })).toContain("save [file.svg]");
+
+    const filePath = join(tmpdir(), `svg-editor-${Date.now()}.svg`);
+    editor.dispatch({ name: "save", arguments: [filePath] });
+    const svg = readFileSync(filePath, "utf8");
+    expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"');
+    expect(svg).toContain('<rect id="r1" x="10" y="20" width="100" height="50" fill="red"/>');
+    unlinkSync(filePath);
   });
 });

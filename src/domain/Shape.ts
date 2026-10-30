@@ -43,6 +43,18 @@ export abstract class Shape {
 
   public abstract describe(): string;
 
+  public abstract toSvg(indent?: number): string;
+
+  protected svgStyleAttributes(): string {
+    return [...this.attributes.entries()]
+      .map(([name, value]) => ` ${name}="${Shape.escapeXml(value)}"`)
+      .join("");
+  }
+
+  protected static escapeXml(value: string): string {
+    return value.replaceAll("&", "&amp;").replaceAll("\"", "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  }
+
   protected styleDescription(): string {
     return ["fill", "stroke", "stroke-width"]
       .map((name) => {

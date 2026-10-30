@@ -14,6 +14,11 @@ export class Line extends Shape {
     return `line#${this.id} (${this.x1},${this.y1}) -> (${this.x2},${this.y2})${styles ? ` ${styles}` : ""}`;
   }
 
+  public toSvg(indent = 0): string {
+    const spaces = " ".repeat(indent);
+    return `${spaces}<line id="${Shape.escapeXml(this.id)}" x1="${this.x1}" y1="${this.y1}" x2="${this.x2}" y2="${this.y2}"${this.svgStyleAttributes()}/>`;
+  }
+
   public getAttribute(name: string): string | undefined {
     if (name === "x1") return String(this.x1);
     if (name === "y1") return String(this.y1);

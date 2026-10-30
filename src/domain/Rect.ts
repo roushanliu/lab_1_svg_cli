@@ -23,6 +23,11 @@ export class Rect extends Shape {
     return `rect#${this.id} x=${this.x} y=${this.y} w=${this.width} h=${this.height}${styles ? ` ${styles}` : ""}`;
   }
 
+  public toSvg(indent = 0): string {
+    const spaces = " ".repeat(indent);
+    return `${spaces}<rect id="${Shape.escapeXml(this.id)}" x="${this.x}" y="${this.y}" width="${this.width}" height="${this.height}"${this.svgStyleAttributes()}/>`;
+  }
+
   public getAttribute(name: string): string | undefined {
     if (name === "x") return String(this.x);
     if (name === "y") return String(this.y);

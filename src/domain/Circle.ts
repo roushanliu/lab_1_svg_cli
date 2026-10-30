@@ -14,6 +14,11 @@ export class Circle extends Shape {
     return `circle#${this.id} cx=${this.cx} cy=${this.cy} r=${this.r}${styles ? ` ${styles}` : ""}`;
   }
 
+  public toSvg(indent = 0): string {
+    const spaces = " ".repeat(indent);
+    return `${spaces}<circle id="${Shape.escapeXml(this.id)}" cx="${this.cx}" cy="${this.cy}" r="${this.r}"${this.svgStyleAttributes()}/>`;
+  }
+
   public getAttribute(name: string): string | undefined {
     if (name === "cx") return String(this.cx);
     if (name === "cy") return String(this.cy);

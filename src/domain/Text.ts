@@ -11,6 +11,11 @@ export class Text extends Shape {
     return `text#${this.id} (${this.x},${this.y}) "${this.content}"${styles ? ` ${styles}` : ""}`;
   }
 
+  public toSvg(indent = 0): string {
+    const spaces = " ".repeat(indent);
+    return `${spaces}<text id="${Shape.escapeXml(this.id)}" x="${this.x}" y="${this.y}"${this.svgStyleAttributes()}>${Shape.escapeXml(this.content)}</text>`;
+  }
+
   public getAttribute(name: string): string | undefined {
     if (name === "x") return String(this.x);
     if (name === "y") return String(this.y);

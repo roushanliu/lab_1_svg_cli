@@ -14,6 +14,11 @@ export class Ellipse extends Shape {
     return `ellipse#${this.id} cx=${this.cx} cy=${this.cy} rx=${this.rx} ry=${this.ry}${styles ? ` ${styles}` : ""}`;
   }
 
+  public toSvg(indent = 0): string {
+    const spaces = " ".repeat(indent);
+    return `${spaces}<ellipse id="${Shape.escapeXml(this.id)}" cx="${this.cx}" cy="${this.cy}" rx="${this.rx}" ry="${this.ry}"${this.svgStyleAttributes()}/>`;
+  }
+
   public getAttribute(name: string): string | undefined {
     if (name === "cx") return String(this.cx);
     if (name === "cy") return String(this.cy);
