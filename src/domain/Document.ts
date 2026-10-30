@@ -67,6 +67,14 @@ export class Document {
     return lines.join("\n");
   }
 
+  public elementCount(): number {
+    const count = (shapes: readonly Shape[]): number => shapes.reduce((total, shape) => {
+      const container = shape as Shape & { children?: readonly Shape[] };
+      return total + 1 + (container.children ? count(container.children) : 0);
+    }, 0);
+    return count(this.rootShapes);
+  }
+
   public documentOrder(shape: Shape): number {
     let order = 0;
     let result = -1;

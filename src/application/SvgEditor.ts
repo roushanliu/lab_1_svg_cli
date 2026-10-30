@@ -57,6 +57,16 @@ export class SvgEditor {
       this.history.lockAfterDocumentCommand();
       return `saved to ${path}`;
     });
+    this.dispatcher.register("read", (request) => () => {
+      const [path] = request.arguments;
+      if (!path) throw new Error("read requires a file path");
+      const document = this.reader.read(path);
+      this.currentDocument = document;
+      this.currentPath = path;
+      this.history.lockAfterDocumentCommand();
+      const warningText = this.reader.warnings.length ? `${this.reader.warnings.join("\n")}\n` : "";
+      return `${warningText}read ${path} (${document.elementCount()} elements)`;
+    });
     this.dispatcher.register("create", (request) => this.createCommand(request));
     this.dispatcher.register("move", (request) => this.moveCommand(request));
     this.dispatcher.register("scale", (request) => this.scaleCommand(request));

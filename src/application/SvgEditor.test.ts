@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, unlinkSync } from "node:fs";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SvgEditor } from "./SvgEditor.js";
@@ -122,6 +122,35 @@ describe("SvgEditor first command loop", () => {
     const svg = readFileSync(filePath, "utf8");
     expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"');
     expect(svg).toContain('<rect id="r1" x="10" y="20" width="100" height="50" fill="red"/>');
+    unlinkSync(filePath);
+  });
+
+  it("reads nested SVG, assigns missing ids, and preserves the tree", () => {
+    const filePath = join(tmpdir(), `svg-reader-${Date.now()}.svg`);
+    writeFileSync(filePath, `<?xml version="1.0"?><svg width="400" height="300"><rect x="0" y="0" width="400" height="300" fill="#fff"/><g id="scene"><circle cx="20" cy="30" r="10"/></g><text id="label" x="10" y="290">hello</text></svg>`, "utf8");
+    const editor = new SvgEditor();
+    const result = editor.dispatch({ name: "read", arguments: [filePath] }) ?? "";
+
+    expect(result).toContain("warning: assigned id rect1 to unnamed <rect>");
+    expect(result).toContain("read ");
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("g#scene");
+    expect(editor.dispatch({ name: "tree", arguments: [] })).toContain("circle#circle1");
+    expect(editor.dispatch({ name: "show", arguments: ["label"] })).toContain('"hello"');
+    unlinkSync(filePath);
+  });
+
+  it("round-trips a saved SVG through the reader", () => {
+    const filePath = join(tmpdir(), `svg-roundtrip-${Date.now()}.svg`);
+    const writer = new SvgEditor();
+    writer.dispatch({ name: "init", arguments: ["200", "100"] });
+    writer.dispatch({ name: "create", arguments: ["g", "scene"] });
+    writer.dispatch({ name: "create", arguments: ["text", "label", "10", "20", "hello", "in", "scene"] });
+    writer.dispatch({ name: "save", arguments: [filePath] });
+
+    const reader = new SvgEditor();
+    reader.dispatch({ name: "read", arguments: [filePath] });
+    expect(reader.dispatch({ name: "tree", arguments: [] })).toContain("g#scene");
+    expect(reader.dispatch({ name: "show", arguments: ["label"] })).toContain('"hello"');
     unlinkSync(filePath);
   });
 });
