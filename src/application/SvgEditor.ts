@@ -20,11 +20,12 @@ export class SvgEditor {
   private currentPath?: string;
   public readonly history = new CommandHistory();
   public readonly dispatcher = new CommandDispatcher();
-  public readonly reader = new SvgReader();
+  public readonly reader = new SvgReader(() => {});
   public readonly writer = new SvgWriter();
 
   public constructor() {
     this.dispatcher.register("init", (request) => () => {
+      if (request.arguments.length > 2) throw new Error("init accepts width and height");
       const width = request.arguments[0] ? Number(request.arguments[0]) : 800;
       const height = request.arguments[1] ? Number(request.arguments[1]) : 600;
       this.init(width, height);
@@ -38,6 +39,7 @@ export class SvgEditor {
       return `canvas ${this.document.width}x${this.document.height} updated`;
     });
     this.dispatcher.register("show", (request) => () => {
+      if (request.arguments.length !== 1) throw new Error("show requires id");
       const [id] = request.arguments;
       if (!id) throw new Error("show requires id");
       return this.document.show(id);
@@ -50,14 +52,16 @@ export class SvgEditor {
       "front <id>", "back <id>", "tree [id]", "show <id>", "help", "undo", "redo",
     ].join("\n"));
     this.dispatcher.register("save", (request) => () => {
+      if (request.arguments.length > 1) throw new Error("save accepts at most one file path");
       const path = request.arguments[0] ?? this.currentPath;
       if (!path) throw new Error("save requires a file path");
       this.writer.write(path, this.document);
       this.currentPath = path;
       this.history.lockAfterDocumentCommand();
-      return `saved to ${path}`;
+      return `saved to ${path} (${this.document.elementCount()} elements)`;
     });
     this.dispatcher.register("read", (request) => () => {
+      if (request.arguments.length !== 1) throw new Error("read requires a file path");
       const [path] = request.arguments;
       if (!path) throw new Error("read requires a file path");
       const document = this.reader.read(path);
@@ -77,12 +81,18 @@ export class SvgEditor {
     this.dispatcher.register("addto", (request) => this.addToCommand(request));
     this.dispatcher.register("front", (request) => this.zOrderCommand(request, true));
     this.dispatcher.register("back", (request) => this.zOrderCommand(request, false));
-    this.dispatcher.register("tree", (request) => () => this.document.tree(request.arguments[0]));
+    this.dispatcher.register("tree", (request) => () => {
+      if (request.arguments.length > 1) throw new Error("tree accepts at most one id");
+      return this.document.tree(request.arguments[0]);
+    });
     this.dispatcher.register("undo", () => () => this.history.undo());
     this.dispatcher.register("redo", () => () => this.history.redo());
   }
 
   public init(width = 800, height = 600): void {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+      throw new Error("canvas dimensions must be positive");
+    }
     this.currentDocument = new Document(width, height);
     this.currentPath = undefined;
     this.history.lockAfterDocumentCommand();
@@ -118,12 +128,14 @@ export class SvgEditor {
   }
 
   private moveCommand(request: CommandRequest): Command {
+    if (request.arguments.length !== 3) throw new Error("move requires id, dx and dy");
     const [id, dx, dy] = request.arguments;
     if (!id || dx === undefined || dy === undefined) throw new Error("move requires id, dx and dy");
     return new MoveCommand(this.document, id, this.number(dx, "dx"), this.number(dy, "dy"));
   }
 
   private scaleCommand(request: CommandRequest): Command {
+    if (request.arguments.length !== 2) throw new Error("scale requires id and factor");
     const [id, factor] = request.arguments;
     if (!id || factor === undefined) throw new Error("scale requires id and factor");
     return new ScaleCommand(this.document, id, this.number(factor, "factor"));
@@ -136,6 +148,7 @@ export class SvgEditor {
   }
 
   private deleteCommand(request: CommandRequest): Command {
+    if (request.arguments.length !== 1) throw new Error("delete requires id");
     const [id] = request.arguments;
     if (!id) throw new Error("delete requires id");
     return new DeleteCommand(this.document, id);
@@ -148,18 +161,21 @@ export class SvgEditor {
   }
 
   private ungroupCommand(request: CommandRequest): Command {
+    if (request.arguments.length !== 1) throw new Error("ungroup requires id");
     const [id] = request.arguments;
     if (!id) throw new Error("ungroup requires id");
     return new UngroupCommand(this.document, id);
   }
 
   private addToCommand(request: CommandRequest): Command {
+    if (request.arguments.length !== 2) throw new Error("addto requires container id and shape id");
     const [containerId, shapeId] = request.arguments;
     if (!containerId || !shapeId) throw new Error("addto requires container id and shape id");
     return new AddToCommand(this.document, containerId, shapeId);
   }
 
   private zOrderCommand(request: CommandRequest, toFront: boolean): Command {
+    if (request.arguments.length !== 1) throw new Error(`${toFront ? "front" : "back"} requires id`);
     const [id] = request.arguments;
     if (!id) throw new Error(`${toFront ? "front" : "back"} requires id`);
     return new ZOrderCommand(this.document, id, toFront);

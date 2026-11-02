@@ -9,9 +9,8 @@ export class Cli {
   public constructor(private readonly editor: SvgEditor) {}
 
   public async run(): Promise<void> {
-    if (!input.isTTY) return;
     const readline = createInterface({ input, output, prompt: "svg> " });
-    readline.prompt();
+    if (input.isTTY) readline.prompt();
     for await (const line of readline) {
       try {
         const request = this.parser.parse(line);
@@ -23,7 +22,7 @@ export class Cli {
         const message = error instanceof Error ? error.message : String(error);
         output.write(`error: ${message}\n`);
       }
-      readline.prompt();
+      if (input.isTTY) readline.prompt();
     }
     readline.close();
   }

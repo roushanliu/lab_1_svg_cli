@@ -118,7 +118,7 @@ describe("SvgEditor first command loop", () => {
     expect(editor.dispatch({ name: "help", arguments: [] })).toContain("save [file.svg]");
 
     const filePath = join(tmpdir(), `svg-editor-${Date.now()}.svg`);
-    editor.dispatch({ name: "save", arguments: [filePath] });
+    expect(editor.dispatch({ name: "save", arguments: [filePath] })).toBe(`saved to ${filePath} (1 elements)`);
     const svg = readFileSync(filePath, "utf8");
     expect(svg).toContain('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"');
     expect(svg).toContain('<rect id="r1" x="10" y="20" width="100" height="50" fill="red"/>');

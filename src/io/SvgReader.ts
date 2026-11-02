@@ -1,20 +1,16 @@
 import { readFileSync } from "node:fs";
 import { XMLParser } from "fast-xml-parser";
-import { Circle } from "../domain/Circle.js";
 import { ContainerShape } from "../domain/ContainerShape.js";
 import { Document } from "../domain/Document.js";
-import { Ellipse } from "../domain/Ellipse.js";
-import { Group } from "../domain/Group.js";
-import { Line } from "../domain/Line.js";
-import { Rect } from "../domain/Rect.js";
-import { Text } from "../domain/Text.js";
 import type { Shape } from "../domain/Shape.js";
+import { ShapeFactory } from "../factory/ShapeFactory.js";
 
 type XmlAttributes = Record<string, string>;
 type XmlNode = Record<string, unknown>;
 
 export class SvgReader {
   public warnings: string[] = [];
+  private readonly factory: ShapeFactory;
   private readonly parser = new XMLParser({
     preserveOrder: true,
     ignoreAttributes: false,
@@ -23,11 +19,21 @@ export class SvgReader {
     trimValues: false,
   });
 
-  public constructor(private readonly warningSink: (message: string) => void = (message) => console.warn(message)) {}
+  public constructor(
+    private readonly warningSink: (message: string) => void = (message) => console.warn(message),
+    factory = new ShapeFactory(),
+  ) {
+    this.factory = factory;
+  }
 
   public read(filePath: string): Document {
     this.warnings = [];
-    const source = readFileSync(filePath, "utf8");
+    let source: string;
+    try {
+      source = readFileSync(filePath, "utf8");
+    } catch {
+      throw new Error(`cannot read file: ${filePath}`);
+    }
     const parsed = this.parser.parse(source) as XmlNode[];
     const root = parsed.find((node) => Array.isArray(node.svg));
     if (!root) throw new Error(`invalid SVG document: ${filePath}`);
@@ -56,15 +62,40 @@ export class SvgReader {
       for (const name of ["fill", "stroke", "stroke-width"]) if (attributes[name] !== undefined) shape.setAttribute(name, attributes[name]);
       return shape;
     };
-    switch (tag) {
-      case "g": return style(new Group(id));
-      case "rect": return style(new Rect(id, this.requiredNumber(attributes.x, "x"), this.requiredNumber(attributes.y, "y"), this.requiredNumber(attributes.width, "width"), this.requiredNumber(attributes.height, "height")));
-      case "circle": return style(new Circle(id, this.requiredNumber(attributes.cx, "cx"), this.requiredNumber(attributes.cy, "cy"), this.requiredNumber(attributes.r, "r")));
-      case "ellipse": return style(new Ellipse(id, this.requiredNumber(attributes.cx, "cx"), this.requiredNumber(attributes.cy, "cy"), this.requiredNumber(attributes.rx, "rx"), this.requiredNumber(attributes.ry, "ry")));
-      case "line": return style(new Line(id, this.requiredNumber(attributes.x1, "x1"), this.requiredNumber(attributes.y1, "y1"), this.requiredNumber(attributes.x2, "x2"), this.requiredNumber(attributes.y2, "y2")));
-      case "text": return style(new Text(id, this.requiredNumber(attributes.x, "x"), this.requiredNumber(attributes.y, "y"), this.textContent(node)));
-      default: throw new Error(`unknown shape type: ${tag}`);
-    }
+    const parameterReaders: Record<string, () => readonly string[]> = {
+      g: () => [],
+      rect: () => [
+        this.requiredNumber(attributes.x, "x").toString(),
+        this.requiredNumber(attributes.y, "y").toString(),
+        this.requiredNumber(attributes.width, "width").toString(),
+        this.requiredNumber(attributes.height, "height").toString(),
+      ],
+      circle: () => [
+        this.requiredNumber(attributes.cx, "cx").toString(),
+        this.requiredNumber(attributes.cy, "cy").toString(),
+        this.requiredNumber(attributes.r, "r").toString(),
+      ],
+      ellipse: () => [
+        this.requiredNumber(attributes.cx, "cx").toString(),
+        this.requiredNumber(attributes.cy, "cy").toString(),
+        this.requiredNumber(attributes.rx, "rx").toString(),
+        this.requiredNumber(attributes.ry, "ry").toString(),
+      ],
+      line: () => [
+        this.requiredNumber(attributes.x1, "x1").toString(),
+        this.requiredNumber(attributes.y1, "y1").toString(),
+        this.requiredNumber(attributes.x2, "x2").toString(),
+        this.requiredNumber(attributes.y2, "y2").toString(),
+      ],
+      text: () => [
+        this.requiredNumber(attributes.x, "x").toString(),
+        this.requiredNumber(attributes.y, "y").toString(),
+        this.textContent(node),
+      ],
+    };
+    const readParameters = parameterReaders[tag];
+    if (!readParameters) throw new Error(`unknown shape type: ${tag}`);
+    return style(this.factory.create(tag, id, readParameters()));
   }
 
   private assignId(tag: string, document: Document): string {
